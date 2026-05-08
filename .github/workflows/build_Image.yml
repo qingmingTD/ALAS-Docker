@@ -81,14 +81,14 @@ jobs:
           latest_version=$(curl -s https://api.github.com/repos/LmeSzinc/AzurLaneAutoScript/releases/latest | jq -r '.tag_name')
           echo "LATEST_VERSION=$latest_version" >> $GITHUB_ENV
       
-      # 从使用github cli获取当前仓库中packages的最新tag标签
+      # 从使用github cli获取当前仓库中packages的最新tag标签，当package不存在时，LATEST_TAG为null
       - name: Get latest tag of current repository packages
         id: get_latest_tag
         env: 
           GH_TOKEN: ${{ github.token }}
         run: |
           latest_tag=$(gh api "users/qingmingTD/packages/container/alas-full/versions" \
-          --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]')
+          --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]' 2>/dev/null || echo "null")
           echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
       
       # 比较最新版本号和最新tag标签是否相同，并输出结果到GITHUB_ENV
