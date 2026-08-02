@@ -45,9 +45,11 @@ jobs:
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "DATE_TAG=$DATE_TAG" >> $GITHUB_ENV
           echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> $GITHUB_ENV
-          docker build --platform linux/arm64 --build-arg UPDATECODE=$SHA \
+          docker buildx build --platform linux/arm64 \
+          --build-arg UPDATECODE=$SHA \
           -t ghcr.io/${REPOSITORY_OWNER}/alas-arm64:v$DATE_TAG \
           -t ghcr.io/${REPOSITORY_OWNER}/alas-arm64:latest \
+          --load \
           ./arm64
 
       # 上传构建好的Docker镜像到GitHub Packages
@@ -106,9 +108,11 @@ jobs:
         run: |
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> $GITHUB_ENV
-          docker build --platform linux/arm64 -f Dockerfile.full --build-arg UPDATECODE=$LATEST_VERSION \
+          docker buildx build --platform linux/arm64 -f arm64/Dockerfile.full \
+          --build-arg UPDATECODE=$LATEST_VERSION \
           -t ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:$LATEST_VERSION \
           -t ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest \
+          --load \
           ./arm64
 
       # 上传构建好的Docker镜像到GitHub Packages
