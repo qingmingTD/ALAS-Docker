@@ -1,0 +1,18 @@
+#docker build -f Dockerfile.full -t alas-full-amd64:latest .
+
+FROM ghcr.io/qingmingtd/alas:latest
+
+# 显式绑定到指定 GitHub 仓库 URL
+LABEL org.opencontainers.image.source="https://github.com/qingmingtd/ALAS-Docker"
+LABEL org.opencontainers.image.description="ALAS运行环境+ALAS项目"
+
+EXPOSE 22267
+
+WORKDIR /app
+
+# 用于打破缓存，强制重新执行以下命令
+ARG UPDATECODE=0
+
+RUN git clone --depth 1 https://github.com/LmeSzinc/AzurLaneAutoScript.git
+
+CMD ["python", "AzurLaneAutoScript/gui.py"]

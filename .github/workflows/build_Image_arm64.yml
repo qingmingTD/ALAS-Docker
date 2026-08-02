@@ -1,4 +1,4 @@
-name: Sync and Build ALAS Image
+name: Sync and Build ALAS Image --arm64
 
 on:
   schedule:
@@ -16,18 +16,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       
-      # 从UpdateCode文件的最后一行获取文本
+      # 从arm64/UpdateCode文件的最后一行获取文本
       - name: Get last line of UpdateCode
         id: get_last_line
         run: |
-          last_line=$(tail -n 1 UpdateCode)
+          last_line=$(tail -n 1 arm64/UpdateCode)
           echo "LAST_LINE=$last_line" >> $GITHUB_ENV
 
-      # 从https://api.github.com/repos/LmeSzinc/AzurLaneAutoScript/commits?path=deploy/docker/requirements.txt获取sha值
+      # 从https://api.github.com/repos/qingmingtd/ALAS-Docker/commits?path=arm64/requirements.txt获取sha值
       - name: Get sha of requirements.txt
         id: get_sha
         run: |
-          sha=$(curl -s https://api.github.com/repos/LmeSzinc/AzurLaneAutoScript/commits?path=deploy/docker/requirements.txt | jq -r '.[0].sha')
+          sha=$(curl -s https://api.github.com/repos/qingmingtd/ALAS-Docker/commits?path=arm64/requirements.txt | jq -r '.[0].sha')
           echo "SHA=$sha" >> $GITHUB_ENV
 
       # 比较UpdateCode文件的最后一行文本和requirements.txt中的sha值是否相同，并输出结果到GITHUB_ENV
@@ -45,22 +45,25 @@ jobs:
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "DATE_TAG=$DATE_TAG" >> $GITHUB_ENV
           echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> $GITHUB_ENV
-          docker build --build-arg UPDATECODE=$SHA -t ghcr.io/${REPOSITORY_OWNER}/alas:v$DATE_TAG -t ghcr.io/${REPOSITORY_OWNER}/alas:latest .
+          docker build --build-arg UPDATECODE=$SHA \
+          -t ghcr.io/${REPOSITORY_OWNER}/alas-arm64:v$DATE_TAG \
+          -t ghcr.io/${REPOSITORY_OWNER}/alas-arm64:latest \
+          ./arm64
 
       # 上传构建好的Docker镜像到GitHub Packages
       - name: Push alas image to GitHub Packages
         if: env.COMPARE_RESULT == 'false'
         run: |
           echo ${{ github.token }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker push ghcr.io/${REPOSITORY_OWNER}/alas:v$DATE_TAG
-          docker push ghcr.io/${REPOSITORY_OWNER}/alas:latest
+          docker push ghcr.io/${REPOSITORY_OWNER}/alas-arm64:v$DATE_TAG
+          docker push ghcr.io/${REPOSITORY_OWNER}/alas-arm64:latest
           echo "PUSH_RESULT=true" >> $GITHUB_ENV
 
       # 将sha值追加到UpdateCode文件的最后一行，并提交更改
       - name: Update UpdateCode file
         if: env.PUSH_RESULT == 'true'
         run: |
-          echo "$SHA" >> UpdateCode
+          echo "$SHA" >> arm64/UpdateCode
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
@@ -87,7 +90,7 @@ jobs:
         env: 
           GH_TOKEN: ${{ github.token }}
         run: |
-          latest_tag=$(gh api "users/qingmingTD/packages/container/alas-full/versions" \
+          latest_tag=$(gh api "users/qingmingTD/packages/container/alas-full-arm64/versions" \
           --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]' 2>/dev/null || echo "null")
           echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
       
@@ -103,14 +106,15 @@ jobs:
         run: |
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> $GITHUB_ENV
-          docker build --build-arg UPDATECODE=$LATEST_VERSION \
-          -t ghcr.io/${REPOSITORY_OWNER}/alas-full:$LATEST_VERSION \
-          -t ghcr.io/${REPOSITORY_OWNER}/alas-full:latest ./full
+          docker build -f Dockerfile.full --build-arg UPDATECODE=$LATEST_VERSION \
+          -t ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:$LATEST_VERSION \
+          -t ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest \
+          ./arm64
 
       # 上传构建好的Docker镜像到GitHub Packages
       - name: Push alas-full image to GitHub Packages
         if: env.COMPARE_VERSION_TAG_RESULT == 'false'
         run: |
           echo ${{ github.token }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker push ghcr.io/${REPOSITORY_OWNER}/alas-full:$LATEST_VERSION
-          docker push ghcr.io/${REPOSITORY_OWNER}/alas-full:latest
+          docker push ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:$LATEST_VERSION
+          docker push ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest
