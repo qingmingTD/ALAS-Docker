@@ -2,10 +2,6 @@
 
 FROM python:3.7-slim-bullseye
 
-# 显式绑定到指定 GitHub 仓库 URL
-LABEL org.opencontainers.image.source="https://github.com/qingmingtd/ALAS-Docker"
-LABEL org.opencontainers.image.description="ALAS运行环境，无ALAS项目"
-
 EXPOSE 22267
 
 WORKDIR /app/AzurLaneAutoScript

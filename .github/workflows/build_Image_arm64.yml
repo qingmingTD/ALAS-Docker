@@ -21,48 +21,60 @@ jobs:
         id: get_last_line
         run: |
           last_line=$(tail -n 1 arm64/UpdateCode)
-          echo "LAST_LINE=$last_line" >> $GITHUB_ENV
+          echo "LAST_LINE=$last_line" >> "$GITHUB_OUTPUT"
 
-      # 从https://api.github.com/repos/qingmingtd/ALAS-Docker/commits?path=arm64/requirements.txt获取sha值
+      # 从requirements.txt获取sha值
       - name: Get sha of requirements.txt
         id: get_sha
         run: |
-          sha=$(curl -s https://api.github.com/repos/qingmingtd/ALAS-Docker/commits?path=arm64/requirements.txt | jq -r '.[0].sha')
-          echo "SHA=$sha" >> $GITHUB_ENV
+          sha=$(curl -s "https://api.github.com/repos/${{ github.repository }}/commits?path=arm64/requirements.txt" | jq -r '.[0].sha')
+          echo "SHA=$sha" >> "$GITHUB_OUTPUT"
 
-      # 比较UpdateCode文件的最后一行文本和requirements.txt中的sha值是否相同，并输出结果到GITHUB_ENV
+      # 比较UpdateCode文件的最后一行文本和requirements.txt中的sha值是否相同，并输出结果到GITHUB_OUTPUT
       - name: Compare last line and sha
         id: compare
-        run: echo "COMPARE_RESULT=$([ "$LAST_LINE" = "$SHA" ] && echo "true" || echo "false")" >> $GITHUB_ENV
+        env:
+          LAST_LINE: ${{ steps.get_last_line.outputs.LAST_LINE }}
+          SHA: ${{ steps.get_sha.outputs.SHA }}
+        run: |
+          echo "COMPARE_RESULT=$([ "$LAST_LINE" = "$SHA" ] && echo "true" || echo "false")" >> "$GITHUB_OUTPUT"
 
       # 当COMPARE_RESULT为false时，开始构建Docker镜像，标签设置为构建时间，格式为v2026.05.05
       # 处理用户名将其全转为小写，避免用户名包含大写字母导致构建失败
       # 构建Docker镜像时，将sha值作为构建参数传递给Dockerfile中的ARG UPDATECODE打破后续缓存，确保每次构建都会重新安装依赖
       - name: Build Docker image
-        if: env.COMPARE_RESULT == 'false'
+        id: build_image
+        if: steps.compare.outputs.COMPARE_RESULT == 'false'
         run: |
           DATE_TAG=$(date -u +"%Y.%m.%d")
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "DATE_TAG=$DATE_TAG" >> $GITHUB_ENV
-          echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> $GITHUB_ENV
           docker build \
           --build-arg UPDATECODE=$SHA \
-          -t ghcr.io/${REPOSITORY_OWNER}/alas-arm64:v$DATE_TAG \
-          -t ghcr.io/${REPOSITORY_OWNER}/alas-arm64:latest \
+          -t "ghcr.io/${REPOSITORY_OWNER}/alas-arm64:v${DATE_TAG}" \
+          -t "ghcr.io/${REPOSITORY_OWNER}/alas-arm64:latest" \
           ./arm64
+          echo "DATE_TAG=$DATE_TAG" >> "$GITHUB_OUTPUT"
+          echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> "$GITHUB_OUTPUT"
+          echo "BUILD_RESULT=true" >> "$GITHUB_OUTPUT"
 
       # 上传构建好的Docker镜像到GitHub Packages
       - name: Push alas image to GitHub Packages
-        if: env.COMPARE_RESULT == 'false'
+        if: steps.build_image.outputs.BUILD_RESULT == 'true'
+        env:
+          TOKEN: ${{ github.token }}
+          DATE_TAG: ${{ steps.build_image.outputs.DATE_TAG }}
+          REPOSITORY_OWNER: ${{ steps.build_image.outputs.REPOSITORY_OWNER }}
         run: |
-          echo ${{ github.token }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker push ghcr.io/${REPOSITORY_OWNER}/alas-arm64:v$DATE_TAG
-          docker push ghcr.io/${REPOSITORY_OWNER}/alas-arm64:latest
-          echo "PUSH_RESULT=true" >> $GITHUB_ENV
+          echo "$TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          docker push "ghcr.io/${REPOSITORY_OWNER}/alas-arm64:v${DATE_TAG}"
+          docker push "ghcr.io/${REPOSITORY_OWNER}/alas-arm64:latest"
+          echo "PUSH_RESULT=true" >> "$GITHUB_OUTPUT"
 
       # 将sha值追加到UpdateCode文件的最后一行，并提交更改
       - name: Update UpdateCode file
-        if: env.PUSH_RESULT == 'true'
+        if: steps.push_image.outputs.PUSH_RESULT == 'true'
+        env:
+          SHA: ${{ steps.get_sha.outputs.SHA }}
         run: |
           echo "$SHA" >> arm64/UpdateCode
           git config --global user.name "github-actions[bot]"
@@ -83,7 +95,7 @@ jobs:
         id: get_latest_version
         run: |
           latest_version=$(curl -s https://api.github.com/repos/LmeSzinc/AzurLaneAutoScript/releases/latest | jq -r '.tag_name')
-          echo "LATEST_VERSION=$latest_version" >> $GITHUB_ENV
+          echo "LATEST_VERSION=$latest_version" >> "$GITHUB_OUTPUT"
       
       # 从使用github cli获取当前仓库中packages的最新tag标签，当package不存在时，LATEST_TAG为null
       - name: Get latest tag of current repository packages
@@ -91,32 +103,43 @@ jobs:
         env: 
           GH_TOKEN: ${{ github.token }}
         run: |
-          latest_tag=$(gh api "users/qingmingTD/packages/container/alas-full-arm64/versions" \
+          latest_tag=$(gh api "users/${{ github.repository_owner }}/packages/container/alas-full-arm64/versions" \
           --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]' 2>/dev/null || echo "null")
-          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
+          echo "LATEST_TAG=$latest_tag" >> "$GITHUB_OUTPUT"
       
-      # 比较最新版本号和最新tag标签是否相同，并输出结果到GITHUB_ENV
+      # 比较最新版本号和最新tag标签是否相同，并输出结果到GITHUB_OUTPUT
       - name: Compare latest version and latest tag
         id: compare_version_tag
-        run: echo "COMPARE_VERSION_TAG_RESULT=$([ "$LATEST_VERSION" = "$LATEST_TAG" ] && echo "true" || echo "false")" >> $GITHUB_ENV
+        env:
+          LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
+          LATEST_TAG: ${{ steps.get_latest_tag.outputs.LATEST_TAG }}
+        run: |
+          COMPARE_VERSION_TAG_RESULT=$([ "$LATEST_VERSION" = "$LATEST_TAG" ] && echo "true" || echo "false")
+          echo "COMPARE_VERSION_TAG_RESULT=$COMPARE_VERSION_TAG_RESULT" >> "$GITHUB_OUTPUT"
 
       # 当COMPARE_VERSION_TAG_RESULT为false时，开始构建Docker镜像，标签设置为最新版本号
       # 构建Docker镜像时，将最新版本号作为构建参数传递给Dockerfile中的ARG UPDATECODE打破后续缓存，确保每次构建都会重新安装依赖
       - name: Build Docker image with latest version
-        if: env.COMPARE_VERSION_TAG_RESULT == 'false'
+        id: build_image
+        if: steps.compare_version_tag.outputs.COMPARE_VERSION_TAG_RESULT == 'false'
         run: |
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> $GITHUB_ENV
           docker build -f arm64/Dockerfile.full \
           --build-arg UPDATECODE=$LATEST_VERSION \
-          -t ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:$LATEST_VERSION \
-          -t ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest \
+          -t "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:${LATEST_VERSION}" \
+          -t "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest" \
           ./arm64
+          echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> "$GITHUB_OUTPUT"
+          echo "BUILD_RESULT=true" >> "$GITHUB_OUTPUT"
 
       # 上传构建好的Docker镜像到GitHub Packages
       - name: Push alas-full image to GitHub Packages
-        if: env.COMPARE_VERSION_TAG_RESULT == 'false'
+        if: steps.build_image.outputs.BUILD_RESULT == 'true'
+        env:
+          TOKEN: ${{ github.token }}
+          REPOSITORY_OWNER: ${{ steps.build_image.outputs.REPOSITORY_OWNER }}
+          LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
         run: |
-          echo ${{ github.token }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker push ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:$LATEST_VERSION
-          docker push ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest
+          echo "$TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          docker push "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:${LATEST_VERSION}"
+          docker push "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest"

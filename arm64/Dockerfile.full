@@ -2,10 +2,6 @@
 
 FROM ghcr.io/qingmingtd/alas-arm64:latest
 
-# 显式绑定到指定 GitHub 仓库 URL
-LABEL org.opencontainers.image.source="https://github.com/qingmingtd/ALAS-Docker"
-LABEL org.opencontainers.image.description="ALAS运行环境+ALAS项目"
-
 EXPOSE 22267
 
 WORKDIR /app

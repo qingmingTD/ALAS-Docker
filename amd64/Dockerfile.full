@@ -1,10 +1,6 @@
 #docker build -f Dockerfile.full -t alas-full-amd64:latest .
 
-FROM ghcr.io/qingmingtd/alas:latest
-
-# 显式绑定到指定 GitHub 仓库 URL
-LABEL org.opencontainers.image.source="https://github.com/qingmingtd/ALAS-Docker"
-LABEL org.opencontainers.image.description="ALAS运行环境+ALAS项目"
+FROM ghcr.io/qingmingtd/alas-amd64:latest
 
 EXPOSE 22267
 
