@@ -33,7 +33,7 @@ docker run -v ./AzurLaneAutoScript:/app/AzurLaneAutoScript -v /etc/localtime:/et
 # Android AArch64/arm64
 ## 安装Termux
 ```bash
-pkg update && pkg install -y proot-distro
+pkg update && pkg install -y git proot-distro
 # PRoot-Distro version '5.5.0'
 ```
 
@@ -156,3 +156,6 @@ exit
 # 重启容器
 proot-distro run alas-full-arm64
 ```
+
+# 附录
+毫秒镜像：[https://1ms.run/guide](https://1ms.run/guide) 有 ghcr.io 通道

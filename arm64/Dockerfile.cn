@@ -1,6 +1,6 @@
 # proot-distro build -f Dockerfile.cn -t alas-cn-arm64:latest .
 
-FROM python:3.7-slim-bullseye
+FROM docker.1ms.run/python:3.7-slim-bullseye
 
 EXPOSE 22267
 
