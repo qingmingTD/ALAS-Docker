@@ -59,6 +59,7 @@ jobs:
 
       # 上传构建好的Docker镜像到GitHub Packages
       - name: Push alas image to GitHub Packages
+        id: push_image
         if: steps.build_image.outputs.BUILD_RESULT == 'true'
         env:
           TOKEN: ${{ github.token }}
@@ -122,6 +123,8 @@ jobs:
       - name: Build Docker image with latest version
         id: build_image
         if: steps.compare_version_tag.outputs.COMPARE_VERSION_TAG_RESULT == 'false'
+        env:
+          LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
         run: |
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           docker build -f arm64/Dockerfile.full \

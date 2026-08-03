@@ -130,7 +130,7 @@ jobs:
           LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
         run: |
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          docker build -f Dockerfile.full --build-arg UPDATECODE=$LATEST_VERSION \
+          docker build -f amd64/Dockerfile.full --build-arg UPDATECODE=$LATEST_VERSION \
           -t "ghcr.io/${REPOSITORY_OWNER}/alas-full-amd64:$LATEST_VERSION" \
           -t "ghcr.io/${REPOSITORY_OWNER}/alas-full-amd64:latest" \
           ./amd64
