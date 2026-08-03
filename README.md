@@ -33,7 +33,7 @@ docker run -v ./AzurLaneAutoScript:/app/AzurLaneAutoScript -v /etc/localtime:/et
 # Android AArch64/arm64
 ## 安装Termux
 ```bash
-pkg update && pkg -y install proot-distro
+pkg update && pkg install -y proot-distro
 # PRoot-Distro version '5.5.0'
 ```
 
