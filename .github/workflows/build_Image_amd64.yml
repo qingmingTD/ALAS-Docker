@@ -5,10 +5,11 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
-      UpdateCode:
-        description: 'Override UpdateCode value'
+      ForceBuild:
+        description: 'Force build image'
         required: false
-        default: ''
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -21,15 +22,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       
-      # 从amd64/UpdateCode文件的最后一行获取文本；若手动触发时传入了UpdateCode变量，则覆盖之
+      # 从amd64/UpdateCode文件的最后一行获取文本
       - name: Get last line of UpdateCode
         id: get_last_line
         run: |
-          if [ -n "${{ inputs.UpdateCode }}" ]; then
-            last_line="${{ inputs.UpdateCode }}"
-          else
-            last_line=$(tail -n 1 amd64/UpdateCode)
-          fi
+          last_line=$(tail -n 1 amd64/UpdateCode)
           echo "LAST_LINE=$last_line" >> "$GITHUB_OUTPUT"
 
       # 从https://api.github.com/repos/LmeSzinc/AzurLaneAutoScript/commits?path=deploy/docker/requirements.txt获取sha值
@@ -52,7 +49,7 @@ jobs:
       # 构建Docker镜像时，将sha值作为构建参数传递给Dockerfile中的ARG UPDATECODE打破后续缓存，确保每次构建都会重新安装依赖
       - name: Build Docker image
         id: build_image
-        if: steps.compare.outputs.COMPARE_RESULT == 'false'
+        if: steps.compare.outputs.COMPARE_RESULT == 'false' || inputs.ForceBuild
         run: |
           DATE_TAG=$(date -u +"%Y.%m.%d")
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
@@ -78,7 +75,7 @@ jobs:
           docker push "ghcr.io/${REPOSITORY_OWNER}/alas-amd64:latest"
           echo "PUSH_RESULT=true" >> "$GITHUB_OUTPUT"
 
-      # 将sha值追加到UpdateCode文件的最后一行
+      # 将sha值写入UpdateCode文件
       # 更新requirements.txt
       # 并提交更改
       - name: Update UpdateCode file
@@ -86,7 +83,7 @@ jobs:
         env:
           SHA: ${{ steps.get_sha.outputs.SHA }}
         run: |
-          echo "$SHA" >> amd64/UpdateCode
+          echo "$SHA" > amd64/UpdateCode
           curl -s https://raw.githubusercontent.com/LmeSzinc/AzurLaneAutoScript/refs/heads/master/deploy/docker/requirements.txt \
           -o amd64/requirements.txt
           git config --global user.name "github-actions[bot]"
@@ -134,7 +131,7 @@ jobs:
       # 构建Docker镜像时，将最新版本号作为构建参数传递给Dockerfile中的ARG UPDATECODE打破后续缓存，确保每次构建都会重新安装依赖
       - name: Build Docker image with latest version
         id: build_image
-        if: steps.compare_version_tag.outputs.COMPARE_VERSION_TAG_RESULT == 'false'
+        if: steps.compare_version_tag.outputs.COMPARE_VERSION_TAG_RESULT == 'false' || inputs.ForceBuild
         env:
           LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
         run: |
