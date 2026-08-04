@@ -42,11 +42,13 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm -f /tmp/requiremen
 # 后置安装外部mxnet包，解决冲突问题(国内源)
 # 该源有防盗链，需要带Referer:https://www.binss.me，先下载，再安装
 # 新的Layer层，避免下载失败导致整层重下，出错再次构建可复用之前的缓存
-RUN curl -e "https://www.binss.me/" \
+RUN apt install -y curl \
+    && curl -e "https://www.binss.me/" \
     -O https://binsitepublic-10018028.file.myqcloud.com/mxnet-1.9.1-py3-none-any.whl \
     && pip install --no-cache-dir mxnet-1.9.1-py3-none-any.whl \
     # 软链接解决找不到libmxnet.so问题
     && ln -s /usr/local/mxnet/libmxnet.so /usr/local/lib/python3.7/site-packages/mxnet/libmxnet.so \
-    && rm -f mxnet-1.9.1-py3-none-any.whl
+    && rm -f mxnet-1.9.1-py3-none-any.whl \
+    && apt remove -y curl
 
 CMD ["python", "gui.py"]
