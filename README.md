@@ -84,6 +84,7 @@ pkg update && pkg install -y git proot-distro
 ```
 ### 构建镜像
 ```bash
+# 20分钟左右构建完成
 proot-distro build -f ALAS-Docker/arm64/Dockerfile.cn -t alas-cn-arm64:latest ./ALAS-Docker/arm64
 # 新建容器
 proot-distro install alas-cn-arm64:latest

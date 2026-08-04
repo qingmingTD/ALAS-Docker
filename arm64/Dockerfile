@@ -25,7 +25,7 @@ ARG UPDATECODE=0
 
 RUN pip install --no-cache-dir -r https://raw.githubusercontent.com/qingmingtd/ALAS-Docker/refs/heads/main/arm64/requirements.txt
 
-# 后置安装外部mxnet包，解决冲突问题(国内源)
+# 后置安装外部mxnet包，解决冲突问题
 # 新的Layer层，避免下载失败导致整层重下，出错再次构建可复用之前的缓存
 RUN pip install --no-cache-dir https://github.com/LmeSzinc/AzurLaneAutoScript/raw/7ac25c06dc1e9841f771d8a2060d420d7e6f0a87/dev_tools/arm64/mxnet-1.9.1-py3-none-any.whl \
     # 软链接解决找不到libmxnet.so问题
