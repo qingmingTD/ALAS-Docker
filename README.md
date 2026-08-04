@@ -62,7 +62,7 @@ proot-distro run -b ./AzurLaneAutoScript:/app/AzurLaneAutoScript alas-arm64
 
 # Dockerfile.cn本地构建
 为什么不提供Dockerfile.cn的镜像？  
-因为没梯子的情况下，在外网构建镜像国内拉取不了，但项目可以通过代理网站下载，所以只能自己构建。
+因为github action使用不了国内镜像源，所以只能自己构建。
 ```bash
 # 拉取项目，或自行找代理网站下载
 git clone --depth 1 https://github.com/qingmingtd/ALAS-Docker.git
@@ -93,7 +93,7 @@ proot-distro run -b ./AzurLaneAutoScript:/app/AzurLaneAutoScript alas-cn-arm64 a
 ```
 
 # 时区设置
-- 如果拉取的是`alas-xxx`或`alas-full-xxx`镜像，而非使用Dockerfile.cn本地构建，需要手动设置时区。
+- 如果拉取的是`alas-xxx`或`alas-full-xxx`远程镜像，而非使用Dockerfile.cn本地构建，需要手动设置时区。
 - 使用 Dockerfile.cn 本地构建的镜像（alas-cn-xxx）已默认设置为 Asia/Shanghai 时区，无需再手动配置。
 ## X86_64/AMD64
 ```bash
@@ -121,7 +121,7 @@ exit
 proot-distro run alas-arm64
 ```
 
-# Alas配置（必要）
+# 国内Alas配置（必要）
 ## 如果是自行挂载
 ```bash
 # 进入项目
@@ -132,14 +132,14 @@ cp config/deploy.template-docker.yaml config/deploy.yaml
 ```
 
 ## 如果使用的是全量镜像
+全量镜像里配置的是deploy.template-docker.yaml，国内使用需修改为deploy.template-docker-cn.yaml。
 ### X86_64/AMD64
 ```bash
 # 进入容器
 docker exec -it alas-full-amd64 /bin/bash
 # 进入项目
 cd /app/AzurLaneAutoScript
-cp config/deploy.template-docker.yaml config/deploy.yaml
-# 国内
+# 国内配置
 cp config/deploy.template-docker-cn.yaml config/deploy.yaml
 # 退出容器
 exit
@@ -152,9 +152,8 @@ docker restart alas-full-amd64
 proot-distro login alas-full-arm64
 # 进入项目
 cd /app/AzurLaneAutoScript
-cp config/deploy.template-docker.yaml config/deploy.yaml
-# 国内
-# cp config/deploy.template-docker-cn.yaml config/deploy.yaml
+# 国内配置
+cp config/deploy.template-docker-cn.yaml config/deploy.yaml
 # 退出容器
 exit
 # 重启容器
