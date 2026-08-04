@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
+    inputs:
+      UpdateCode:
+        description: 'Override UpdateCode value'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -16,11 +21,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       
-      # 从amd64/UpdateCode文件的最后一行获取文本
+      # 从amd64/UpdateCode文件的最后一行获取文本；若手动触发时传入了UpdateCode变量，则覆盖之
       - name: Get last line of UpdateCode
         id: get_last_line
         run: |
-          last_line=$(tail -n 1 amd64/UpdateCode)
+          if [ -n "${{ inputs.UpdateCode }}" ]; then
+            last_line="${{ inputs.UpdateCode }}"
+          else
+            last_line=$(tail -n 1 amd64/UpdateCode)
+          fi
           echo "LAST_LINE=$last_line" >> "$GITHUB_OUTPUT"
 
       # 从https://api.github.com/repos/LmeSzinc/AzurLaneAutoScript/commits?path=deploy/docker/requirements.txt获取sha值
