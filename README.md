@@ -66,24 +66,27 @@ proot-distro run -b ./AzurLaneAutoScript:/app/AzurLaneAutoScript alas-arm64
 ```bash
 # 拉取项目，或自行找代理网站下载
 git clone --depth 1 https://github.com/qingmingtd/ALAS-Docker.git
-```
-## X86_64/AMD64
-```bash
-cd ALAS-Docker/amd64
-docker build -f Dockerfile.cn -t alas-cn-amd64:latest .
-cd ..
 # 拉取alas项目，或自行找代理网站下载
 git clone --depth 1 https://github.com/LmeSzinc/AzurLaneAutoScript.git
+```
+## X86_64/AMD64
+### 构建镜像
+```bash
+docker build -f ALAS-Docker/amd64/Dockerfile.cn -t alas-cn-amd64:latest ./ALAS-Docker/amd64
 # 运行容器
 docker run -v ./AzurLaneAutoScript:/app/AzurLaneAutoScript -v /etc/localtime:/etc/localtime:ro -p 22267:22267 --name alas-cn-amd64 alas-cn-amd64:latest
 ```
 ## AArch64/arm64
+### 安装Termux
 ```bash
-cd ALAS-Docker/arm64
-proot-distro build -f Dockerfile.cn -t alas-cn-arm64:latest .
-cd ..
-# 拉取alas项目，或自行找代理网站下载
-git clone --depth 1 https://github.com/LmeSzinc/AzurLaneAutoScript.git
+pkg update && pkg install -y git proot-distro
+# PRoot-Distro version '5.5.0'
+```
+### 构建镜像
+```bash
+proot-distro build -f ALAS-Docker/arm64/Dockerfile.cn -t alas-cn-arm64:latest ./ALAS-Docker/arm64
+# 新建容器
+proot-distro install alas-cn-arm64:latest
 # 运行容器
 proot-distro run -b ./AzurLaneAutoScript:/app/AzurLaneAutoScript alas-cn-arm64 alas-cn-arm64:latest
 ```
@@ -117,7 +120,7 @@ exit
 proot-distro run alas-arm64
 ```
 
-# Alas配置
+# Alas配置（必要）
 ## 如果是自行挂载
 ```bash
 # 进入项目
@@ -158,4 +161,4 @@ proot-distro run alas-full-arm64
 ```
 
 # 附录
-毫秒镜像：[https://1ms.run/guide](https://1ms.run/guide) 有 ghcr.io 通道
+毫秒镜像：[https://1ms.run/guide](https://1ms.run/guide) 有 ghcr.io 通道可以直接拉取。

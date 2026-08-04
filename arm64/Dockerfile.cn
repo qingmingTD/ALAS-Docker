@@ -37,9 +37,11 @@ ARG UPDATECODE=0
 COPY requirements.txt /tmp/requirements.txt
 
 # 国内使用项目中的文件安装，避免url访问失败
-RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm -f /tmp/requirements.txt \
-    # 后置安装外部mxnet包，解决冲突问题(国内源)
-    && pip install --no-cache-dir https://binsitepublic-10018028.file.myqcloud.com/mxnet-1.9.1-py3-none-any.whl \
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm -f /tmp/requirements.txt
+
+# 后置安装外部mxnet包，解决冲突问题(国内源)
+# 新的Layer层，避免下载失败导致整层重下，出错再次构建可复用之前的缓存
+RUN pip install --no-cache-dir https://binsitepublic-10018028.file.myqcloud.com/mxnet-1.9.1-py3-none-any.whl \
     # 软链接解决找不到libmxnet.so问题
     && ln -s /usr/local/mxnet/libmxnet.so /usr/local/lib/python3.7/site-packages/mxnet/libmxnet.so
 
