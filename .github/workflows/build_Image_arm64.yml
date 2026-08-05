@@ -118,7 +118,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           latest_tag=$(gh api "users/${{ github.repository_owner }}/packages/container/alas-full-arm64/versions" \
-          --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]' 2>/dev/null || echo "null")
+          --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]' 2>/dev/null || echo "v0.0.0")
           echo "LATEST_TAG=$latest_tag" >> "$GITHUB_OUTPUT"
       
       # 比较最新版本号和最新tag标签是否相同，并输出结果到GITHUB_OUTPUT
@@ -128,8 +128,8 @@ jobs:
           LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
           LATEST_TAG: ${{ steps.get_latest_tag.outputs.LATEST_TAG }}
         run: |
-          VERSION_NUM=${echo "$LATEST_VERSION" | sed 's/v//;s/\./\n/g'}
-          TAG_NUM=${echo "$LATEST_TAG" | sed 's/v//;s/\./\n/g'}
+          VERSION_NUM=$(echo "$LATEST_VERSION" | sed 's/v//;s/\.//g')
+          TAG_NUM=$(echo "$LATEST_TAG" | sed 's/v//;s/\.//g')
           COMPARE_VERSION_TAG_RESULT=$([ "$VERSION_NUM" -gt "$TAG_NUM" ] && echo "true" || echo "false")
           echo "COMPARE_VERSION_TAG_RESULT=$COMPARE_VERSION_TAG_RESULT" >> "$GITHUB_OUTPUT"
 
