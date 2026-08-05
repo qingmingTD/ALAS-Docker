@@ -119,8 +119,13 @@ jobs:
         env: 
           GH_TOKEN: ${{ github.token }}
         run: |
-          latest_tag=$(gh api "users/${{ github.repository_owner }}/packages/container/alas-full-amd64/versions" \
-          --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]' 2>/dev/null || echo "v0.0.0")
+          if response=$(gh api "users/${{ github.repository_owner }}/packages/container/alas-full-amd64/versions" \
+            --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]' 2>/dev/null) \
+            && [ -n "$response" ] && [ "$response" != "null" ]; then
+            latest_tag=$response
+          else
+            latest_tag="v0.0.0"
+          fi
           echo "LATEST_TAG=$latest_tag" >> "$GITHUB_OUTPUT"
       
       # 比较最新版本号和最新tag标签是否相同，并输出结果到GITHUB_OUTPUT
