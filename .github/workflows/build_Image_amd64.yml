@@ -119,7 +119,7 @@ jobs:
         env: 
           GH_TOKEN: ${{ github.token }}
         run: |
-          latest_tag=$(gh api "users/${{ github.repository_owner }}/packages/container/alas-full/versions" \
+          latest_tag=$(gh api "users/${{ github.repository_owner }}/packages/container/alas-full-amd64/versions" \
           --jq '.[0].metadata.container.tags | [.[] | select(. != "latest")][0]' 2>/dev/null || echo "v0.0.0")
           echo "LATEST_TAG=$latest_tag" >> "$GITHUB_OUTPUT"
       
