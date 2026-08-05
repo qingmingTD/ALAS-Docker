@@ -128,7 +128,9 @@ jobs:
           LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
           LATEST_TAG: ${{ steps.get_latest_tag.outputs.LATEST_TAG }}
         run: |
-          COMPARE_VERSION_TAG_RESULT=$([ "$LATEST_VERSION" = "$LATEST_TAG" ] && echo "true" || echo "false")
+          VERSION_NUM=${echo "$LATEST_VERSION" | sed 's/v//;s/\./\n/g'}
+          TAG_NUM=${echo "$LATEST_TAG" | sed 's/v//;s/\./\n/g'}
+          COMPARE_VERSION_TAG_RESULT=$([ "$VERSION_NUM" -gt "$TAG_NUM" ] && echo "true" || echo "false")
           echo "COMPARE_VERSION_TAG_RESULT=$COMPARE_VERSION_TAG_RESULT" >> "$GITHUB_OUTPUT"
 
       # 当COMPARE_VERSION_TAG_RESULT为false时，开始构建Docker镜像，标签设置为最新版本号
@@ -136,18 +138,18 @@ jobs:
       - name: Build Docker image with latest version
         id: build_image
         if: >-
-          steps.compare_version_tag.outputs.COMPARE_VERSION_TAG_RESULT == 'false' 
+          steps.compare_version_tag.outputs.COMPARE_VERSION_TAG_RESULT == 'true' 
           || needs.build-alas.outputs.PUSH_RESULT == 'true' 
           || inputs.ForceBuild
-        env:
-          LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
         run: |
+          DATE_TAG=$(date -u +"%Y.%m.%d")
           REPOSITORY_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           docker build -f arm64/Dockerfile.full \
-          --build-arg UPDATECODE=$LATEST_VERSION \
-          -t "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:${LATEST_VERSION}" \
+          --build-arg UPDATECODE=$DATE_TAG \
+          -t "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:${DATE_TAG}" \
           -t "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest" \
           ./arm64
+          echo "DATE_TAG=$DATE_TAG" >> "$GITHUB_OUTPUT"
           echo "REPOSITORY_OWNER=$REPOSITORY_OWNER" >> "$GITHUB_OUTPUT"
           echo "BUILD_RESULT=true" >> "$GITHUB_OUTPUT"
 
@@ -156,9 +158,9 @@ jobs:
         if: steps.build_image.outputs.BUILD_RESULT == 'true'
         env:
           TOKEN: ${{ github.token }}
+          DATE_TAG: ${{ steps.build_image.outputs.DATE_TAG }}
           REPOSITORY_OWNER: ${{ steps.build_image.outputs.REPOSITORY_OWNER }}
-          LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
         run: |
           echo "$TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker push "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:${LATEST_VERSION}"
+          docker push "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:${DATE_TAG}"
           docker push "ghcr.io/${REPOSITORY_OWNER}/alas-full-arm64:latest"
