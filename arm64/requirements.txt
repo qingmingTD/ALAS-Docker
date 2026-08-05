@@ -8,7 +8,7 @@ imageio==2.27.0
 # Device connection
 adbutils==0.11.0
 uiautomator2==2.16.17
-uiautomator2cache==0.3.0.1
+uiautomator2cache==0.3.1  # 0.3.0.1缺少atx-agent_0.10.0_linux_arm64.tar.gz，使用0.3.1版本
 wrapt==1.13.1
 retrying
 lz4
