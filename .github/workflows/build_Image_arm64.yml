@@ -18,6 +18,8 @@ permissions:
 jobs:
   build-alas:
     runs-on: ubuntu-24.04-arm
+    outputs: 
+      PUSH_RESULT: ${{ steps.push_image.outputs.PUSH_RESULT }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -133,7 +135,10 @@ jobs:
       # 构建Docker镜像时，将最新版本号作为构建参数传递给Dockerfile中的ARG UPDATECODE打破后续缓存，确保每次构建都会重新安装依赖
       - name: Build Docker image with latest version
         id: build_image
-        if: steps.compare_version_tag.outputs.COMPARE_VERSION_TAG_RESULT == 'false' || inputs.ForceBuild
+        if: >-
+          steps.compare_version_tag.outputs.COMPARE_VERSION_TAG_RESULT == 'false' 
+          || needs.build-alas.outputs.PUSH_RESULT == 'true' 
+          || inputs.ForceBuild
         env:
           LATEST_VERSION: ${{ steps.get_latest_version.outputs.LATEST_VERSION }}
         run: |
